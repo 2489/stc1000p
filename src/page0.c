@@ -26,7 +26,7 @@
 unsigned int __at _CONFIG1 __CONFIG1 = 0xFD4;
 unsigned int __at _CONFIG2 __CONFIG2 = 0x3AFF;
 
-/* Temperature lookup table  */
+/* Temperature lookup table NTC 10K B(25/50C):3950 */
 #ifdef FAHRENHEIT
 	const int ad_lookup[] = { 0, -369, -164, -32, 69, 153, 226, 292, 353, 410, 465, 517, 569, 619, 669, 719, 770, 821, 874, 928, 985, 1045, 1109, 1178, 1254, 1338, 1434, 1547, 1685, 1865, 2127, 2607 };
 #else  // CELSIUS
