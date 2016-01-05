@@ -129,6 +129,9 @@ static int check_config_value(int config_value, unsigned char eeadr){
 #elif defined(FO433)
 		} else if(type == t_deviceid){
 			t_max = 15;
+#else 
+		} else if(type == t_sp_tempdiff){
+			t_max = TEMP_SP_DIFF_MAX;
 #endif
 		} else if(type == t_sp_alarm){
 			t_min = SP_ALARM_MIN;

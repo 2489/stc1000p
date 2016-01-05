@@ -101,6 +101,7 @@
 	#define TEMP_CORR_MIN			(-100)
 	#define TEMP_HYST_1_MAX			(100)
 	#define TEMP_HYST_2_MAX			(500)
+	#define TEMP_SP_DIFF_MAX		(100)
 	#define SP_ALARM_MIN			(-800)
 	#define SP_ALARM_MAX			(800)
 #else  // CELSIUS
@@ -109,6 +110,7 @@
 	#define TEMP_CORR_MAX			(50)
 	#define TEMP_CORR_MIN			(-50)
 	#define TEMP_HYST_1_MAX			(50)
+	#define TEMP_SP_DIFF_MAX		(50)
 	#define TEMP_HYST_2_MAX			(250)
 	#define SP_ALARM_MIN			(-400)
 	#define SP_ALARM_MAX			(400)
@@ -156,6 +158,8 @@ enum e_item_type {
 	t_hyst_1,
 #if defined(PB2)
 	t_hyst_2,
+#elif !defined(FO433)
+	t_sp_tempdiff,
 #endif
 	t_sp_alarm,
 #if defined FO433
@@ -301,6 +305,7 @@ enum e_item_type {
 		_(dh, 	LED_d, 	LED_h, 	LED_OFF, 	t_duration,			0)				\
 		_(cd, 	LED_c, 	LED_d, 	LED_OFF, 	t_delay,			5)				\
 		_(hd, 	LED_h, 	LED_d, 	LED_OFF, 	t_delay,			2)				\
+		_(SPd,  LED_S,  LED_P,  LED_d,		t_sp_tempdiff,			0)				\
 		_(rP, 	LED_r, 	LED_P, 	LED_OFF, 	t_boolean,			0)				\
 		_(rn, 	LED_r, 	LED_n, 	LED_OFF, 	t_runmode,			6)
 

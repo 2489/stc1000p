@@ -546,6 +546,11 @@ static void temperature_control(){
 	unsigned char probe2 = eeprom_read_config(EEADR_MENU_ITEM(Pb));
 #endif
 
+	int spTempDiff = 0;
+#if !(defined(OVBSC) || defined(RH) || defined(PB2) || defined(FO433))
+	spTempDiff = eeprom_read_config(EEADR_MENU_ITEM(SPd));
+#endif
+
 	if(cooling_delay){
 		cooling_delay--;
 	}
@@ -561,7 +566,7 @@ static void temperature_control(){
 #if defined PB2
 	if((LATA4 && (temperature <= setpoint || (probe2 && (temperature2 < (setpoint - hysteresis2))))) || (LATA5 && (temperature >= setpoint || (probe2 && (temperature2 > (setpoint + hysteresis2)))))){
 #else
-	if((LATA4 && (temperature <= setpoint )) || (LATA5 && (temperature >= setpoint))){
+	if((LATA4 && (temperature <= setpoint )) || (LATA5 && (temperature >= (setpoint - spTempDiff)))){
 #endif
 		cooling_delay = eeprom_read_config(EEADR_MENU_ITEM(cd)) << 6;
 		cooling_delay = cooling_delay - (cooling_delay >> 4);
@@ -586,7 +591,7 @@ static void temperature_control(){
 #if defined PB2
 		} else if ((temperature < setpoint - hysteresis) && (!probe2 || (temperature2 <= setpoint + hysteresis2))) {
 #else
-		} else if (temperature < setpoint - hysteresis) {
+		} else if (temperature < (setpoint - hysteresis - spTempDiff)) {
 #endif
 			if (heating_delay) {
 				led_e.e_heat = led_e.e_heat ^ (heating_delay & 0x1); // Flash to indicate heating delay
