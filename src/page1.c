@@ -279,7 +279,7 @@ void button_menu_fsm(){
 
 	switch(menustate){
 	case menu_idle:
-		if(0 == menu_lock_state){
+		if(0 == menu_lock_state || LATA0){
 #if defined(OVBSC)
 			if(ALARM && ((_buttons & 0x0f) == 0) && ((_buttons & 0xf0) !=0)){
 				ALARM = 0;
@@ -330,6 +330,7 @@ void button_menu_fsm(){
 		}
 		if(0 == _buttons) { // display menu lock state until all buttons are released
 			menustate=menu_idle;
+			m_countdown = 0;
 		}
 		break;
 
