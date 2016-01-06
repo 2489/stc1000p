@@ -208,6 +208,7 @@ enum menu_states {
 	menu_show_version,
 	menu_show_state_up,
 	menu_show_state_down,
+	menu_lock_disable_req,
 #if defined(RH)
 	menu_reset_wait,
 #else
@@ -239,6 +240,7 @@ static unsigned char menu_item=0, config_item=0, m_countdown=0;
 #endif
 static int config_value;
 static unsigned char _buttons = 0;
+static unsigned char menu_lock_state = 0;
 
 /* This is the button input and menu handling function.
  * arguments: none
@@ -277,47 +279,77 @@ void button_menu_fsm(){
 
 	switch(menustate){
 	case menu_idle:
+		if(0 == menu_lock_state){
 #if defined(OVBSC)
-		if(ALARM && ((_buttons & 0x0f) == 0) && ((_buttons & 0xf0) !=0)){
-			ALARM = 0;
-		} else if(BTN_RELEASED(BTN_PWR)){
-			PAUSE = !PAUSE;
-		} else {
+			if(ALARM && ((_buttons & 0x0f) == 0) && ((_buttons & 0xf0) !=0)){
+				ALARM = 0;
+			} else if(BTN_RELEASED(BTN_PWR)){
+				PAUSE = !PAUSE;
+			} else {
 #elif defined(RH)
-		if(BTN_PRESSED(BTN_PWR)){
-			m_countdown = 27; // 3 sec
-			menustate = menu_reset_wait;
-		} else {
+			if(BTN_PRESSED(BTN_PWR)){
+				m_countdown = 27; // 3 sec
+				menustate = menu_reset_wait;
+			} else {
 #else
-		if(BTN_PRESSED(BTN_PWR)){
-			m_countdown = 27; // 3 sec
-			menustate = menu_power_down_wait;
-		} else if(_buttons && eeprom_read_config(EEADR_POWER_ON)){
+			if(BTN_PRESSED(BTN_PWR)){
+				m_countdown = 27; // 3 sec
+				menustate = menu_power_down_wait;
+			} else if(_buttons && eeprom_read_config(EEADR_POWER_ON)){
 #endif
+				if (BTN_PRESSED(BTN_UP | BTN_DOWN)) {
+					menustate = menu_show_version;
+				} else if(BTN_PRESSED(BTN_UP)){
+					menustate = menu_show_state_up;
+				} else if(BTN_PRESSED(BTN_DOWN)){
+					m_countdown = 13; // 1.5 sec
+					menustate = menu_show_state_down;
+				} else if(BTN_RELEASED(BTN_S)){
+#if (defined(OVBSC) || defined(RH))
+					menustate = menu_show_config_item;
+#else
+					menustate = menu_show_menu_item;
+#endif
+				}
+			}
+		}else{
+			// menu lock enabled, only allow path to disable it
 			if (BTN_PRESSED(BTN_UP | BTN_DOWN)) {
 				menustate = menu_show_version;
-			} else if(BTN_PRESSED(BTN_UP)){
-				menustate = menu_show_state_up;
-			} else if(BTN_PRESSED(BTN_DOWN)){
-				m_countdown = 13; // 1.5 sec
-				menustate = menu_show_state_down;
-			} else if(BTN_RELEASED(BTN_S)){
-#if (defined(OVBSC) || defined(RH))
-				menustate = menu_show_config_item;
-#else
-				menustate = menu_show_menu_item;
-#endif
 			}
 		}
 		break;
 
-	case menu_show_version:
-		int_to_led(STC1000P_VERSION);
-		led_10.decimal = 0;
-		led_e.e_deg = 1;
-		led_e.e_c = 1;
-		if(!BTN_HELD(BTN_UP | BTN_DOWN)){
+	case menu_lock_disable_req:
+		if(0 == m_countdown){ // Disable menu lock if UP+DOWN followed by PWR is held for 10s
+			led_10.raw = LED_L;
+			led_1.raw = LED_o;
+			led_01.raw = LED_F;
+			led_e.raw = LED_OFF;
+			menu_lock_state = 0;
+		}
+		if(0 == _buttons) { // display menu lock state until all buttons are released
 			menustate=menu_idle;
+		}
+		break;
+
+	case menu_show_version:
+		if(BTN_PRESSED(BTN_PWR)) { // UP+DOWN followed by PWR enables menu lock 
+			led_10.raw = LED_L;
+			led_1.raw = LED_o;
+			led_01.raw = LED_n;
+			led_e.raw = LED_OFF;
+			menu_lock_state = 1;
+			menustate = menu_lock_disable_req;
+			m_countdown = 90; //10 sec
+		}else{
+			int_to_led(STC1000P_VERSION);
+			led_10.decimal = 0;
+			led_e.e_deg = 1;
+			led_e.e_c = 1;
+			if(!BTN_HELD(BTN_UP | BTN_DOWN)){
+				menustate=menu_idle;
+			}
 		}
 		break;
 
