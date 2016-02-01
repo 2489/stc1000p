@@ -294,13 +294,16 @@ enum e_item_type {
 	 */
 	#define MENU_DATA(_) \
 		_(SP, 	LED_S, 	LED_P, 	LED_OFF, 	t_temperature,		DEFAULT_SP)		\
-		_(hy, 	LED_h, 	LED_y, 	LED_OFF, 	t_hyst_1,			DEFAULT_hy) 	\
+		_(hyc, 	LED_h, 	LED_y, 	LED_c,		t_hyst_1,			DEFAULT_hy) 	\
+		_(hyh, 	LED_h, 	LED_y, 	LED_h,		t_hyst_1,			DEFAULT_hy) 	\
 		_(tc, 	LED_t, 	LED_c, 	LED_OFF, 	t_tempdiff,			0)				\
 		_(SA, 	LED_S, 	LED_A, 	LED_OFF, 	t_sp_alarm,			0)				\
 		_(St, 	LED_S, 	LED_t, 	LED_OFF, 	t_step,				0)				\
 		_(dh, 	LED_d, 	LED_h, 	LED_OFF, 	t_duration,			0)				\
 		_(cd, 	LED_c, 	LED_d, 	LED_OFF, 	t_delay,			5)				\
+		_(ct,	LED_c,	LED_t,	LED_OFF,	t_duration,			0)				\
 		_(hd, 	LED_h, 	LED_d, 	LED_OFF, 	t_delay,			2)				\
+		_(ht,	LED_h,	LED_t,	LED_OFF,	t_duration,			0)				\
 		_(rP, 	LED_r, 	LED_P, 	LED_OFF, 	t_boolean,			0)				\
 		_(rn, 	LED_r, 	LED_n, 	LED_OFF, 	t_runmode,			6)
 

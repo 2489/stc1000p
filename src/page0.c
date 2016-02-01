@@ -537,6 +537,13 @@ static void update_profile(){
  */
 unsigned int cooling_delay = 60;  // Initial cooling delay
 unsigned int heating_delay = 60;  // Initial heating delay
+
+/* Maximum continuous cooling / heating times */
+#if !(defined(OVBSC) || defined(RH) || defined(PB2) || defined(FO433))
+unsigned int cooling_time;
+unsigned int heating_time;
+#endif
+
 static void temperature_control(){
 #ifndef MINUTE
 	int setpoint = eeprom_read_config(EEADR_MENU_ITEM(SP));
@@ -561,20 +568,34 @@ static void temperature_control(){
 #if defined PB2
 	if((LATA4 && (temperature <= setpoint || (probe2 && (temperature2 < (setpoint - hysteresis2))))) || (LATA5 && (temperature >= setpoint || (probe2 && (temperature2 > (setpoint + hysteresis2)))))){
 #else
-	if((LATA4 && (temperature <= setpoint )) || (LATA5 && (temperature >= setpoint))){
+	if((LATA4 && (temperature <= setpoint )) || (LATA5 && (temperature >= setpoint))
+#if !(defined(OVBSC) || defined(RH) || defined(PB2) || defined(FO433))
+		|| (1 == cooling_time) || (1 == heating_time)
+#endif
+		){
 #endif
 		cooling_delay = eeprom_read_config(EEADR_MENU_ITEM(cd)) << 6;
 		cooling_delay = cooling_delay - (cooling_delay >> 4);
 		heating_delay = eeprom_read_config(EEADR_MENU_ITEM(hd)) << 6;
 		heating_delay = heating_delay - (heating_delay >> 4);
+#if !(defined(OVBSC) || defined(RH) || defined(PB2) || defined(FO433))
+		cooling_time = eeprom_read_config(EEADR_MENU_ITEM(ct)) << 6;
+		cooling_time = cooling_time - (cooling_time >> 4);
+		heating_time = eeprom_read_config(EEADR_MENU_ITEM(ht)) << 6;
+		heating_time = heating_time - (heating_time >> 4);
+#endif
 		LATA4 = 0;
 		LATA5 = 0;
 	}
 	else if(LATA4 == 0 && LATA5 == 0) {
+#if (defined(OVBSC) || defined(RH) || defined(PB2) || defined(FO433))
 		int hysteresis = eeprom_read_config(EEADR_MENU_ITEM(hy));
+#endif
 #ifdef PB2
 		hysteresis2 >>= 2; // Halve hysteresis 2
 		if ((temperature > setpoint + hysteresis) && (!probe2 || (temperature2 >= setpoint - hysteresis2))) {
+#elif !(defined(OVBSC) || defined(RH) || defined(FO433))
+		if(temperature > ( setpoint + eeprom_read_config(EEADR_MENU_ITEM(hyc)) ) ) {
 #else
 		if (temperature > setpoint + hysteresis) {
 #endif
@@ -582,9 +603,16 @@ static void temperature_control(){
 				led_e.e_cool = led_e.e_cool ^ (cooling_delay & 0x1); // Flash to indicate cooling delay
 			} else {
 				LATA4 = 1;
+#if !(defined(OVBSC) || defined(RH) || defined(PB2) || defined(FO433))
+				if(cooling_time) {
+					cooling_time--;
+				}
+#endif
 			}
 #if defined PB2
 		} else if ((temperature < setpoint - hysteresis) && (!probe2 || (temperature2 <= setpoint + hysteresis2))) {
+#elif !(defined(OVBSC) || defined(RH) || defined(FO433))
+		} else if(temperature < ( setpoint - eeprom_read_config(EEADR_MENU_ITEM(hyh)) ) ) {
 #else
 		} else if (temperature < setpoint - hysteresis) {
 #endif
@@ -592,6 +620,11 @@ static void temperature_control(){
 				led_e.e_heat = led_e.e_heat ^ (heating_delay & 0x1); // Flash to indicate heating delay
 			} else {
 				LATA5 = 1;
+#if !(defined(OVBSC) || defined(RH) || defined(PB2) || defined(FO433))
+				if(heating_time) {
+					heating_time--;
+				}
+#endif
 			}
 		}
 	}
@@ -1106,6 +1139,14 @@ void main(void) __naked {
 	unsigned int ad_filter2 = (512L << FILTER_SHIFT);
 #endif
 
+	/* Set initial values for maximum continuous cooling/heating times */
+#if !(defined(OVBSC) || defined(RH) || defined(PB2) || defined(FO433))
+	cooling_time = eeprom_read_config(EEADR_MENU_ITEM(ct)) << 6;
+	cooling_time = cooling_time - (cooling_time >> 4);
+	heating_time = eeprom_read_config(EEADR_MENU_ITEM(ht)) << 6;
+	heating_time = heating_time - (heating_time >> 4);
+#endif
+
 	init();
 
 	START_TCONV_1();
@@ -1268,6 +1309,7 @@ void main(void) __naked {
 						millisx60 = 0;
 					}
 
+#if !defined(SUPPORT_SA)
 					{
 						int sa = eeprom_read_config(EEADR_MENU_ITEM(SA));
 						if(sa){
@@ -1287,17 +1329,21 @@ void main(void) __naked {
 							}
 						}
 					}
-
+#endif
 					// Run thermostat
 					temperature_control();
 
 					// Show temperature if menu is idle
 					if(MENU_IDLE){
+#if !defined(SUPPORT_SA)
+						SHOW_SA_ALARM = !SHOW_SA_ALARM;
 						if(LATA0 && SHOW_SA_ALARM){
 							led_10.raw = LED_S;
 							led_1.raw = LED_A;
 							led_01.raw = LED_OFF;
-						} else {
+						} else
+#endif
+						{
 #if defined(PB2)
 							led_e.e_point = !SENSOR_SELECT;
 							if(SENSOR_SELECT){
@@ -1309,7 +1355,6 @@ void main(void) __naked {
 							temperature_to_led(temperature);
 #endif
 						}
-						SHOW_SA_ALARM = !SHOW_SA_ALARM;
 					}
 				}
 #endif // !OVBSC
